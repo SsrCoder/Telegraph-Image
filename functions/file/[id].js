@@ -36,6 +36,14 @@ export async function onRequest(context) {
     // 移除 Content-Disposition 头，使浏览器直接展示内容而非触发下载
     const respHeaders = new Headers(rawResponse.headers);
     respHeaders.delete('Content-Disposition');
+
+    // 根据文件扩展名设置正确的 Content-Type，避免浏览器触发下载
+    const ext = params.id.split('.').pop()?.toLowerCase();
+    const mimeType = getMimeType(ext);
+    if (mimeType) {
+        respHeaders.set('Content-Type', mimeType);
+    }
+
     const response = new Response(rawResponse.body, {
         status: rawResponse.status,
         statusText: rawResponse.statusText,
@@ -134,6 +142,34 @@ export async function onRequest(context) {
 
     // Return file content
     return response;
+}
+
+function getMimeType(ext) {
+    const mimeTypes = {
+        // 图片
+        'jpg':  'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png':  'image/png',
+        'gif':  'image/gif',
+        'webp': 'image/webp',
+        'svg':  'image/svg+xml',
+        'bmp':  'image/bmp',
+        'ico':  'image/x-icon',
+        // 视频
+        'mp4':  'video/mp4',
+        'webm': 'video/webm',
+        'ogg':  'video/ogg',
+        'mov':  'video/quicktime',
+        // 音频
+        'mp3':  'audio/mpeg',
+        'wav':  'audio/wav',
+        'flac': 'audio/flac',
+        'aac':  'audio/aac',
+        'opus': 'audio/opus',
+        // 文档
+        'pdf':  'application/pdf',
+    };
+    return mimeTypes[ext] || null;
 }
 
 async function getFilePath(env, file_id) {
