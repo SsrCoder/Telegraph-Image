@@ -24,14 +24,23 @@ export async function onRequest(context) {
         fileUrl = `https://api.telegram.org/file/bot${env.TG_Bot_Token}/${filePath}`;
     }
 
-    const response = await fetch(fileUrl, {
+    const rawResponse = await fetch(fileUrl, {
         method: request.method,
         headers: request.headers,
         body: request.body,
     });
 
-    // If the response is OK, proceed with further checks
-    if (!response.ok) return response;
+    // If the response is not OK, return it directly
+    if (!rawResponse.ok) return rawResponse;
+
+    // 移除 Content-Disposition 头，使浏览器直接展示内容而非触发下载
+    const respHeaders = new Headers(rawResponse.headers);
+    respHeaders.delete('Content-Disposition');
+    const response = new Response(rawResponse.body, {
+        status: rawResponse.status,
+        statusText: rawResponse.statusText,
+        headers: respHeaders,
+    });
 
     // Log response details
     console.log(response.ok, response.status);

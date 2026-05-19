@@ -21,9 +21,26 @@ export async function onRequestPost(context) {
         const telegramFormData = new FormData();
         telegramFormData.append("chat_id", env.TG_Chat_ID);
 
-        // 统一使用 document 方式上传，避免文件被压缩
-        telegramFormData.append("document", uploadFile);
-        const apiEndpoint = 'sendDocument';
+        // 根据 always_document 参数决定上传方式
+        const alwaysDocument = formData.get('always_document') === 'true';
+        let apiEndpoint;
+        if (alwaysDocument || (
+            !uploadFile.type.startsWith('image/') &&
+            !uploadFile.type.startsWith('audio/') &&
+            !uploadFile.type.startsWith('video/')
+        )) {
+            telegramFormData.append("document", uploadFile);
+            apiEndpoint = 'sendDocument';
+        } else if (uploadFile.type.startsWith('image/')) {
+            telegramFormData.append("photo", uploadFile);
+            apiEndpoint = 'sendPhoto';
+        } else if (uploadFile.type.startsWith('audio/')) {
+            telegramFormData.append("audio", uploadFile);
+            apiEndpoint = 'sendAudio';
+        } else {
+            telegramFormData.append("video", uploadFile);
+            apiEndpoint = 'sendVideo';
+        }
 
         const result = await sendToTelegram(telegramFormData, apiEndpoint, env);
 
@@ -96,6 +113,15 @@ async function sendToTelegram(formData, apiEndpoint, env, retryCount = 0) {
 
         if (response.ok) {
             return { success: true, data: responseData };
+        }
+
+        // 图片上传失败时转为文档方式重试
+        if (retryCount < MAX_RETRIES && apiEndpoint === 'sendPhoto') {
+            console.log('Retrying image as document...');
+            const newFormData = new FormData();
+            newFormData.append('chat_id', formData.get('chat_id'));
+            newFormData.append('document', formData.get('photo'));
+            return await sendToTelegram(newFormData, 'sendDocument', env, retryCount + 1);
         }
 
         return {
