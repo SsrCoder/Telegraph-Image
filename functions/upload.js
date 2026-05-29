@@ -68,6 +68,22 @@ export async function onRequestPost(context) {
             });
         }
 
+        // 检查是否为 API 请求
+        const isApiRequest = request.headers.get('x-app-type') === 'api';
+
+        if (isApiRequest) {
+            // API 请求：只处理第一个文件，返回单个对象，src 拼接请求域名
+            const domain = new URL(request.url).origin;
+            return new Response(
+                JSON.stringify({ src: `${domain}/file/${fileId}.${fileExtension}` }),
+                {
+                    status: 200,
+                    headers: { 'Content-Type': 'application/json' }
+                }
+            );
+        }
+
+        // 普通请求：返回数组
         return new Response(
             JSON.stringify([{ 'src': `/file/${fileId}.${fileExtension}` }]),
             {
