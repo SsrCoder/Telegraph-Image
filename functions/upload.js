@@ -22,9 +22,10 @@ export async function onRequestPost(context) {
         telegramFormData.append("chat_id", env.TG_Chat_ID);
 
         // 根据 always_document 参数决定上传方式
+        const isApiRequest = request.headers.get('x-app-type') === 'api';
         const alwaysDocument = formData.get('always_document') === 'true';
         let apiEndpoint;
-        if (alwaysDocument || (
+        if (isApiRequest || alwaysDocument || (
             !uploadFile.type.startsWith('image/') &&
             !uploadFile.type.startsWith('audio/') &&
             !uploadFile.type.startsWith('video/')
@@ -69,7 +70,7 @@ export async function onRequestPost(context) {
         }
 
         // 检查是否为 API 请求
-        const isApiRequest = request.headers.get('x-app-type') === 'api';
+        // isApiRequest 已在上方定义
 
         if (isApiRequest) {
             // API 请求：只处理第一个文件，返回单个对象，src 拼接请求域名
