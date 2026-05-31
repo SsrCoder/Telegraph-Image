@@ -1,5 +1,20 @@
 import { errorHandling, telemetryData } from "./utils/middleware";
 
+const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': '*',
+    'Access-Control-Max-Age': '86400',
+};
+
+// 处理 CORS 预检请求
+export async function onRequestOptions() {
+    return new Response(null, {
+        status: 204,
+        headers: corsHeaders,
+    });
+}
+
 export async function onRequestPost(context) {
     const { request, env } = context;
 
@@ -79,7 +94,7 @@ export async function onRequestPost(context) {
                 JSON.stringify({ src: `${domain}/file/${fileId}.${fileExtension}` }),
                 {
                     status: 200,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
                 }
             );
         }
@@ -89,7 +104,7 @@ export async function onRequestPost(context) {
             JSON.stringify([{ 'src': `/file/${fileId}.${fileExtension}` }]),
             {
                 status: 200,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
         );
     } catch (error) {
@@ -98,7 +113,7 @@ export async function onRequestPost(context) {
             JSON.stringify({ error: error.message }),
             {
                 status: 500,
-                headers: { 'Content-Type': 'application/json' }
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             }
         );
     }
