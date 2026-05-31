@@ -37,11 +37,14 @@ export async function onRequest(context) {
     const respHeaders = new Headers(rawResponse.headers);
     respHeaders.delete('Content-Disposition');
 
-    // 根据文件扩展名设置正确的 Content-Type，避免浏览器触发下载
-    const ext = params.id.split('.').pop()?.toLowerCase();
-    const mimeType = getMimeType(ext);
-    if (mimeType) {
-        respHeaders.set('Content-Type', mimeType);
+    // 优先使用上游返回的 Content-Type，仅在缺失或为通用类型时根据扩展名补充
+    const upstreamType = respHeaders.get('Content-Type');
+    if (!upstreamType || upstreamType === 'application/octet-stream') {
+        const ext = params.id.split('.').pop()?.toLowerCase();
+        const mimeType = getMimeType(ext);
+        if (mimeType) {
+            respHeaders.set('Content-Type', mimeType);
+        }
     }
 
     const response = new Response(rawResponse.body, {
